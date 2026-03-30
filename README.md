@@ -15,11 +15,19 @@ isLoading: false,
 error: null,
 lastLoadedAt: null,
 
-## Derived state
+## Derived values
 Filtered Items 
 Sorted Items
 Visible Items
 Kind Counts
-Selected Item
+Selected Visible Item
 Active Summary
 Explanation
+
+## Selectors
+getSortedItems
+getKindCounts(items) - reduce() implemented
+getActiveSummary
+
+## Composition
+getFilteredItems() removes items that do not match the filters, getSortedItems() takes the result and puts it in order for getVisibleItems(). 
