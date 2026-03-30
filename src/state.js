@@ -6,7 +6,8 @@ const state = {
   activeKind: "all",
   showFavoritesOnly: false,
   selectedId: null,
-  favorites: new Set(["echo"]),
+  favorites: new Set(["echo", "tide"]),
+
   items: [],
   isLoading: false,
   error: null,
@@ -51,24 +52,48 @@ function getFilteredItems() {
       || item.title.toLowerCase().includes(normalizedQuery)
       || item.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
 
+    const matchesKind = state.activeKind === "all" || item.kind === state.activeKind;
     const matchesFavorites = !state.showFavoritesOnly || state.favorites.has(item.id);
 
-    // Week 9 TODO: also filter by state.activeKind.
-    return matchesQuery && matchesFavorites;
+    return matchesQuery && matchesKind && matchesFavorites;
   });
 }
 
+function getSortedItems(filteredItems) {
+  return [...filteredItems].sort(compareBy(state.sortBy));
+}
+
 function getVisibleItems() {
-  return [...getFilteredItems()].sort(compareBy(state.sortBy));
+  return getSortedItems(getFilteredItems());
+}
+
+function getKindCounts(items) {
+  return items.reduce((acc, item) => {
+    acc[item.kind] = (acc[item.kind] || 0) + 1;
+    return acc;
+  }, {});
 }
 
 function getSelectedVisibleItem(visibleItems) {
   return visibleItems.find((item) => item.id === state.selectedId) ?? null;
 }
 
-function getKindCounts(items) {
-  // Week 9 TODO: replace this placeholder with a reduce() summary over items.
-  return {};
+function getActiveSummary(visibleItems) {
+  const parts = [];
+
+  if (state.query.trim() !== "") parts.push(`matching “${state.query.trim()}”`);
+  if (state.activeKind !== "all") parts.push(`in ${state.activeKind}`);
+  if (state.showFavoritesOnly) parts.push("favorites only");
+
+  const sortLabel = {
+    "title-asc": "title",
+    "minutes-desc": "minutes",
+    "kind-asc": "kind",
+  }[state.sortBy] || state.sortBy;
+
+  const prefix = `${visibleItems.length} result${visibleItems.length === 1 ? "" : "s"}`;
+  if (parts.length === 0) return `${prefix}, sorted by ${sortLabel}.`;
+  return `${prefix} ${parts.join(" • ")}, sorted by ${sortLabel}.`;
 }
 
 function clearFilters() {
@@ -82,6 +107,7 @@ export {
   DATA_URL,
   clearFilters,
   formatTime,
+  getActiveSummary,
   getKindCounts,
   getSelectedVisibleItem,
   getVisibleItems,

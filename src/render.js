@@ -20,7 +20,7 @@ import {
     statusEl,
     summaryEl,
   } from "./dom.js";
-  import { formatTime, getKindCounts, getSelectedVisibleItem, getVisibleItems, state } from "./state.js";
+  import { formatTime, getKindCounts, getSelectedVisibleItem, getVisibleItems, state, getActiveSummary } from "./state.js";
   
   function renderStatus() {
     if (state.isLoading) {
@@ -44,17 +44,22 @@ import {
   }
   
   // Week 9 TODO: accept kindCounts as a parameter and use it to render real chips below.
-  function renderControls() {
+  function renderControls(kindCounts) {
     searchInput.value = state.query;
     sortSelect.value = state.sortBy;
     favFilterBtn.setAttribute("aria-pressed", state.showFavoritesOnly ? "true" : "false");
     clearBtn.disabled = !state.query && state.activeKind === "all" && !state.showFavoritesOnly && state.sortBy === "title-asc";
   
     kindChips.replaceChildren();
-    const placeholder = document.createElement("div");
-    placeholder.className = "chip";
-    placeholder.textContent = "TODO: render facet chips with reduce() counts";
-    kindChips.appendChild(placeholder);
+
+    for (const kind of Object.keys(kindCounts).sort()) {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.dataset.kind = kind;
+      if (state.activeKind === kind) chip.classList.add("is-selected");
+      chip.textContent = kind + " (" + kindCounts[kind] + ")";
+      kindChips.appendChild(chip);
+    }
   }
   
   function renderList(visibleItems) {
@@ -83,10 +88,11 @@ import {
   // Week 9 TODO: handle the case where selectedId is set but the item is hidden by filters.
   function renderDetail(selectedItem) {
     if (!selectedItem) {
+      if (state.selectedId) state.selectedId = null; // Clear invalid selection.
       detailHint.textContent = "Select an item to show detail.";
       detailTitle.textContent = "Nothing selected";
       detailMeta.textContent = "—";
-      detailDesc.textContent = "Week 9 TODO: decide your selection policy under filtering.";
+      detailDesc.textContent = "Select an item from the options on the left to see more details here.";
       favBtn.disabled = true;
       favBtn.setAttribute("aria-pressed", "false");
       favBtn.textContent = "Favorite";
@@ -115,10 +121,14 @@ import {
     renderDetail(selectedItem);
   
     countsEl.textContent = `${visibleItems.length} shown • ${state.items.length} total`;
-    summaryEl.textContent = "TODO: derive active summary from query, sort, facet, and visible count.";
+    summaryEl.textContent = getActiveSummary(visibleItems);
   
     emptyEl.hidden = state.error || state.isLoading || visibleItems.length !== 0;
-    emptyMsgEl.textContent = "TODO: explain active filters when there are no results.";
+    const reasons = [];
+    if (state.query) reasons.push(`search "${state.query}"`);
+    if (state.activeKind !== "all") reasons.push(`kind "${state.activeKind}"`);
+    if (state.showFavoritesOnly) reasons.push("favorites-only filter");
+    emptyMsgEl.textContent = reasons.length === 0 ? "No items loaded." : `No items match ${reasons.join(" + ")}. Clear some filters.`;
   
     reloadBtn.disabled = state.isLoading;
     retryBtn.disabled = state.isLoading;

@@ -7,6 +7,7 @@ import {
     retryBtn,
     searchInput,
     sortSelect,
+    kindChips
   } from "./dom.js";
   import { loadItems } from "./api.js";
   import { clearFilters, state } from "./state.js";
@@ -64,7 +65,16 @@ import {
   });
   
   // Week 9 TODO: wire facet chip clicks once renderControls creates chips.
-  
+  kindChips.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const chip = target.closest(".chip");
+    if (!chip || !chip.dataset.kind) return;
+
+    state.activeKind = chip.dataset.kind;
+  render();
+  });
   render();
   loadItems(render);
   
